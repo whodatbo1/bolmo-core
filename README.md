@@ -114,26 +114,18 @@ Achieves 78.6% on CUTE (vs 56.9% for Olmo 3) and 71.6% on EXECUTE benchmarks thr
 Unlike subword models, Bolmo can arbitrarily adjust the bytes-per-patch ratio to trade off speed for performance:
 
 ```python
-# Train with higher compression for faster inference
-torchrun --nproc-per-node=8 src/examples/bolmo/train_stage2.py \
-  --target-compression=8.0  # vs default ~4.4
+TODO
 ```
 
 ### 4. Zero-Cost Post-Training
 Existing post-trained checkpoints can be byteified without additional training using Task Arithmetic:
 
 ```python
-from olmo_core.nn.bolmo import byteify_checkpoint
-
-# Merge post-trained checkpoint into Bolmo
-byteified_model = byteify_checkpoint(
-    bolmo_base="allenai/Bolmo-7B",
-    posttrain_checkpoint="allenai/OLMo-3-7B-Instruct"
-)
+TODO
 ```
 
 ### 5. Efficient Training
-Total training cost: only 39.3B tokens (≈173B bytes) to byteify an existing model - orders of magnitude less than training from scratch.
+Total training cost: 9.8B tokens (≈43B bytes) for Stage 1, 39.3B tokens (≈173B bytes) for Stage 2 to byteify an existing model.
 
 ## Performance
 
