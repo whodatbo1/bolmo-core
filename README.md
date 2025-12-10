@@ -5,18 +5,14 @@
 </div>
 
 <p align="center">
-  <a href="https://github.com/allenai/bolmo-core" style="text-decoration: none;">
-    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github">
-  </a>
-  <a href="https://huggingface.co/collections/allenai/bolmo"  style="text-decoration: none;">
-    <img alt="HuggingFace Models" src="https://img.shields.io/badge/🤗-Models-yellow">
-  </a>
-  <a href="https://github.com/allenai/bolmo-core/blob/main/LICENSE" style="text-decoration: none;">
-    <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg">
-  </a>
-  <a href="https://discord.gg/sZq3jTNVNG" style="text-decoration: none;">
-    <img alt="Discord" src="https://img.shields.io/badge/Discord%20-%20blue?style=flat&logo=discord&label=Ai2&color=%235B65E9">
-  </a>
+  <a href="https://github.com/allenai/bolmo-core">
+    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github"></a>
+  <a href="https://huggingface.co/collections/allenai/bolmo">
+    <img alt="HuggingFace Models" src="https://img.shields.io/badge/🤗-Models-yellow"></a>
+  <a href="https://github.com/allenai/bolmo-core/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
+  <a href="https://discord.gg/sZq3jTNVNG">
+    <img alt="Discord" src="https://img.shields.io/badge/Discord%20-%20blue?style=flat&logo=discord&label=Ai2&color=%235B65E9"></a>
 </p>
 
 ---
