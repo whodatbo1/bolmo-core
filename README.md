@@ -1,169 +1,184 @@
 <div align="center">
-  <!-- <img src="https://github.com/allenai/OLMo/assets/8812459/774ac485-a535-4768-8f7c-db7be20f5cc3" width="300"/> -->
-  <img src="https://huggingface.co/datasets/allenai/blog-images/resolve/main/olmo2/olmo.png" alt="OLMo Logo" width="280" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
   <br>
-  <h1>OLMo-core</h1>
-  <h4>Building blocks for OLMo modeling and training</h4>
+  <h1>Bolmo</h1>
+  <h4>The first fully open byte-level language model performing on par with state-of-the-art subword models</h4>
 </div>
+
 <p align="center">
-  <a href="https://olmo-core.readthedocs.io/en/latest/">
-    <img alt="Docs" src="https://img.shields.io/badge/API-docs-red">
+  <a href="https://github.com/allenai/bolmo-core">
+    <img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github">
   </a>
-  <a href="https://github.com/allenai/OLMo-core/tree/main/src/examples">
-    <img alt="Examples" src="https://img.shields.io/badge/API-examples-994B00">
+  <a href="hhttps://huggingface.co/collections/allenai/bolmo">
+    <img alt="HuggingFace Models" src="https://img.shields.io/badge/🤗-Models-yellow">
   </a>
-  <a href="https://github.com/allenai/OLMo-core/releases/tag/v1.9.0">
-    <img alt="Pypi" src="https://img.shields.io/pypi/v/ai2-olmo-core.svg">
-  </a>
-  <a href="https://github.com/allenai/OLMo-core/blob/main/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/allenai/OLMo">
-  </a>
-  <a href="https://arxiv.org/pdf/2501.00656.pdf">
-    <img alt="Paper URL" src="https://img.shields.io/badge/arxiv-2402.00838-orange">
-  </a>
-  <a href="https://playground.allenai.org">
-    <img alt="Playground" src="https://img.shields.io/badge/Ai2-Playground-F0529C">
+  <a href="https://github.com/allenai/bolmo-core/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg">
   </a>
   <a href="https://discord.gg/sZq3jTNVNG">
     <img alt="Discord" src="https://img.shields.io/badge/Discord%20-%20blue?style=flat&logo=discord&label=Ai2&color=%235B65E9">
   </a>
 </p>
 
+---
+
+**Bolmo** is the first fully-open byte-level language model achieving performance on par with or surpassing state-of-the-art subword-level language models. Unlike traditional language models that rely on subword tokenizers (like BPE or WordPiece), Bolmo operates directly on raw UTF-8 bytes, making it:
+
+- **Free of subword tokenization**: No need for language-specific tokenizers or vocabulary management
+- **Universally applicable**: Works seamlessly across all languages, scripts, and domains
+- **Fully open**: Complete training code, model weights, data processing pipeline, and paper
+- **Competitive performance**: Comes close to matching (and in some cases exceeds) subword-based state-of-the-art models across a wide range of tasks
+- **Better character understanding**: Superior performance on tasks requiring character-level knowledge
+
+This repository is a fork of [OLMo-core](https://github.com/allenai/OLMo-core) that implements the complete Bolmo architecture and training pipeline through **byteifying** - our approach to converting existing subword models to byte-level models, using <1% of the pretraining budget.
+
+## Models
+
+We release Bolmo models in two sizes:
+
+| Model | Parameters | Base Model | HuggingFace |
+|-------|-----------|------------|-------------|
+| **Bolmo-7B** | 7.6B | Olmo 3 7B | [allenai/Bolmo-7B](https://huggingface.co/allenai/Bolmo-7B) |
+| **Bolmo-1B** | 1.5B | OLMo 2 1B | [allenai/Bolmo-1B](https://huggingface.co/allenai/Bolmo-1B) |
+
+**Dataset**: Training data based on Dolma 3 pretraining mix + StackEdu code data + CUTE-style character understanding tasks.
+
 ## Installation
 
 First install [PyTorch](https://pytorch.org) according to the instructions specific to your operating system and hardware.
 
-For development, we recommend installing from source:
+### From Source (Recommended for Development)
 
 ```bash
-git clone https://github.com/allenai/OLMo-core.git
-cd OLMo-core
+git clone https://github.com/allenai/bolmo-core.git
+cd bolmo-core
 pip install -e .[all]
 ```
-Or you can install from PyPI with:
 
-```bash
-pip install ai2-olmo-core
-```
+### Optional Dependencies
 
-There are a number of optional dependencies that must be installed to use certain functionality as well, including:
-- [flash-attn](https://github.com/Dao-AILab/flash-attention), [ring-flash-attn](https://github.com/zhuzilin/ring-flash-attention), and [TransformerEngine](https://github.com/NVIDIA/TransformerEngine) for the corresponding attention backends.
-- [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) for a low-memory "fused-linear" loss implementation.
-- [torchao](https://github.com/pytorch/ao) for float8 training.
-- [grouped_gemm](https://github.com/tgale96/grouped_gemm) for dropless mixture-of-experts (MoE) models. You may need to compile from source until [PR #21](https://github.com/tgale96/grouped_gemm/pull/21) is released (post v0.1.6).
+For full functionality, you may need:
+- [flash-attn](https://github.com/Dao-AILab/flash-attention) for efficient attention
+- [TransformerEngine](https://github.com/NVIDIA/TransformerEngine) for optimized training
+- [xlstm](https://github.com/NX-AI/xlstm) for xLSTM components (mLSTM layers used in the Bolmo local models)
+- [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) for low-memory loss implementations
 
-The published [Docker images](https://github.com/orgs/allenai/packages?repo_name=OLMo-core) contain all core and optional dependencies, and are regularly tested on our in-house H100 clusters.
-But there are several things to keep in mind if you intend to use these images:
-- They do not come with the OLMo-core package installed, only its dependencies, to accommodate for regular code changes.
-- They may not work on your own cluster if you have different hardware or driver/CUDA versions.
+See the [OLMo-core documentation](https://olmo-core.readthedocs.io/) for complete installation details.
 
-If the published images do not work for your use-case for any of the above reasons, you could adapt our [Dockerfile](https://github.com/allenai/OLMo-core/blob/main/src/Dockerfile) to build your own images.
+## Quick Start
 
-## Official training scripts
-
-Official training scripts for released models can be found in [`src/scripts/official/`](https://github.com/allenai/OLMo-core/tree/main/src/scripts/official).
-
-These scripts are meant to be launched with ``torchrun``, or with OLMo-core's Beaker launch CLI if you have access to Beaker.
-
-For example:
-
-```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-train.py \
-  --save-folder=/path/to/save/checkpoints
-```
-
-You can override most configuration options from the command-line. For example, to override the learning rate you could launch the script like this:
-
-```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-train.py \
-  --save-folder=/path/to/save/checkpoints \
-  --train_module.optim.lr=6e-3
-```
-
-To continue annealing from a checkpoint, we use a separate script which can be launched like this:
-
-```bash
-torchrun --nproc-per-node=8 src/scripts/official/OLMo2/OLMo-2-0325-32B-anneal.py \
-  --save-folder=/path/to/save/checkpoints \
-  --checkpoint=https://olmo-checkpoints.org/ai2-llm/peteish32/step721901
-```
-
-## OLMo-2 Model Training
-
-OLMo-2 32B pretraining follows a two-stage training procedure.
-In the first stage, we train on large amounts of mostly web-based data: [OLMo-mix-1124](https://huggingface.co/datasets/allenai/olmo-mix-1124).
-In the second stage, we train on a smaller amount of high-quality, targeted data: Dolmino-mix-0324 (releasing soon).
-
-| Stage | Model Size | Training | Checkpoint | Monitoring |
-|-------|------------|----------|------------|------------|
-| stage 1 | **32B** | 6T tokens | [stage1-step721901-tokens6056B](https://huggingface.co/allenai/OLMo-2-0325-32B/tree/stage1-step721901-tokens6056B) | [comet.ml/OLMo2-32B](https://www.comet.com/ai2/olmo-2-0325-32b/reports/olmo-2-0325-32b?shareable=WhT37Wy7jqttDoy6ysDBumQzf) |
-| stage 2 | **32B** | random seed 1110, 100B tokens | [stage2-ingredient1-step11921-tokens101B](https://huggingface.co/allenai/OLMo-2-0325-32B/tree/stage2-ingredient1-step11921-tokens101B) | [comet.ml/OLMo2-32B](https://www.comet.com/ai2/olmo-2-0325-32b/reports/olmo-2-0325-32b-anneal?shareable=WhT37Wy7jqttDoy6ysDBumQzf) |
-| |  | random seed 2662, 100B tokens | [stage2-ingredient2-step11921-tokens101B](https://huggingface.co/allenai/OLMo-2-0325-32B/tree/stage2-ingredient2-step11921-tokens101B) | [comet.ml/OLMo2-32B](https://www.comet.com/ai2/olmo-2-0325-32b/reports/olmo-2-0325-32b-anneal?shareable=WhT37Wy7jqttDoy6ysDBumQzf) |
-|  |  | random seed 2662, 300B tokens | [stage2-ingredient3-step35763-tokens301B](https://huggingface.co/allenai/OLMo-2-0325-32B/tree/stage2-ingredient3-step35763-tokens301B) | [comet.ml/OLMo2-32B](https://www.comet.com/ai2/olmo-2-0325-32b/reports/olmo-2-0325-32b-anneal?shareable=WhT37Wy7jqttDoy6ysDBumQzf) |
-|  |  | **Final Souped Model** | [main](https://huggingface.co/allenai/OLMo-2-0325-32B/tree/main) | No config, weights averaged in Python | - |
-
-The table below lists the checkpoints for Stage 1 and Stage 2 of OLMo-2, along with their corresponding Hugging Face format.
-
-| Variant | OLMo Format (Stage 1) | OLMo Format (Stage 2) | Hugging Face Format |
-|---------|-----------------------|-----------------------|---------------------|
-| **OLMo-2 32B**  | [OLMo-2 32B](https://github.com/allenai/OLMo-core/blob/main/src/scripts/official/OLMo-2-0325-32B.csv)     | [OLMo-2 32B](https://github.com/allenai/OLMo-core/blob/main/src/scripts/official/OLMo-2-0325-32B-stage2.csv)      | [Hugging Face for the 32B variant](https://huggingface.co/allenai/OLMo-2-0325-32B)  |
-
-
-> Note: OLMo-2 7B and 13B models were trained using [the old OLMo trainer](https://github.com/allenai/OLMo). All related checkpoints, configs, and scripts for these models can be found there. While you can train 7B and 13B models with this trainer, please note that the configs and script in the old training codebase are not compatible with this repo.
-
-## Inference
-
-You can use our Hugging Face integration to run inference on the OLMo transformers checkpoints:
+### Inference with HuggingFace
 
 ```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-olmo = AutoModelForCausalLM.from_pretrained("allenai/OLMo-2-0325-32B")
-tokenizer = AutoTokenizer.from_pretrained("allenai/OLMo-2-0325-32B")
-message = ["Language modeling is "]
-inputs = tokenizer(message, return_tensors='pt', return_token_type_ids=False)
-# inputs = {k: v.to('cuda') for k,v in inputs.items()} # optional verifying cuda
-# olmo = olmo.to('cuda')
-response = olmo.generate(**inputs, max_new_tokens=100, do_sample=True, top_k=50, top_p=0.95)
-print(tokenizer.batch_decode(response, skip_special_tokens=True)[0])
+TODO
 ```
 
-Alternatively, with the Hugging Face pipeline abstraction:
+Or with the pipeline API:
 
 ```python
-from transformers import pipeline
-olmo_pipe = pipeline("text-generation", model="allenai/OLMo-2-0325-32B")
-print(olmo_pipe("Language modeling is"))
+TODO
 ```
-### Quantization
+
+## Training
+
+Bolmo training uses a two-stage "byteifying" procedure to convert existing subword models to byte-level:
+
+### Stage 1: Subword-to-Byte Distillation
+Quickly learn weights for local models while freezing the global model (9.8B tokens ≈ 43B bytes).
+
+### Stage 2: End-to-End Training
+Train the entire model to utilize byte-level information (39.3B tokens ≈ 173B bytes).
+
+### Example Training Command
+
+```bash
+# Stage 1
+TODO
+
+# Stage 2 (after Stage 1 completes)
+TODO
+```
+
+See [`src/examples/bolmo/`](src/examples/bolmo/) for detailed training scripts and configuration options.
+
+## Architecture
+
+Bolmo uses a novel architecture that enables converting subword models to efficient byte-level language models:
+
+TODO: image
+
+## Key Features
+
+### 1. Universal Language Support
+No vocabulary limitations - works seamlessly across all languages, scripts, and domains without language-specific tokenizers.
+
+### 2. Superior Character Understanding
+Achieves 78.6% on CUTE (vs 56.9% for Olmo 3) and 71.6% on EXECUTE benchmarks through dedicated character-level training data.
+
+### 3. Adjustable Compression
+Unlike subword models, Bolmo can arbitrarily adjust the bytes-per-patch ratio to trade off speed for performance:
 
 ```python
-olmo = AutoModelForCausalLM.from_pretrained("allenai/OLMo-2-0325-32B", torch_dtype=torch.float16, load_in_8bit=True)  # requires bitsandbytes
+# Train with higher compression for faster inference
+torchrun --nproc-per-node=8 src/examples/bolmo/train_stage2.py \
+  --target-compression=8.0  # vs default ~4.4
 ```
 
-## Evaluation
+### 4. Zero-Cost Post-Training
+Existing post-trained checkpoints can be byteified without additional training using Task Arithmetic:
 
-Additional tools for evaluating OLMo models are available at the [OLMo Eval](https://github.com/allenai/OLMo-eval) and [olmes](https://github.com/allenai/olmes) repositories.
+```python
+from olmo_core.nn.bolmo import byteify_checkpoint
 
-## Development
+# Merge post-trained checkpoint into Bolmo
+byteified_model = byteify_checkpoint(
+    bolmo_base="allenai/Bolmo-7B",
+    posttrain_checkpoint="allenai/OLMo-3-7B-Instruct"
+)
+```
 
-The Python library source code is located in `src/olmo_core`. The corresponding tests are located in `src/test`. The library docs are located in `docs`. You can build the docs locally with `make docs`.
+### 5. Efficient Training
+Total training cost: only 39.3B tokens (≈173B bytes) to byteify an existing model - orders of magnitude less than training from scratch.
 
-Code checks:
-- We use `pytest` to run tests. You can run all tests with `pytest -v src/test`. You can also point `pytest` at a specific test file to run it individually.
-- We use `isort` and `black` for code formatting. Ideally you should integrate these into your editor, but you can also run them manually or configure them with a pre-commit hook. To validate that all files are formatted correctly, run `make style-check`.
-- We use `ruff` as our primary linter. You can run it with `make lint-check`.
-- We use `mypy` as our type checker. You can run it with `make type-check`.
+## Performance
 
-## Citing
+### Bolmo 7B Results
+
+Bolmo 7B comes to matches or exceeds the performance of state-of-the-art byte-level models and comes close to the source Olmo 3 7B model:
+
+| Category | Bolmo 7B | Olmo 3 7B | BLT 7B |
+|----------|----------|-----------|---------|
+| Character Understanding (CUTE) | 78.6 | 56.9 | 52.3 |
+| Multilingual Char (EXECUTE) | 71.6 | 55.1 | 46.3 |
+| Code | 41.0 | 40.1 | - |
+| Math | 48.9 | 55.3 | - |
+| MC Stem | 65.5 | 66.3 | 49.0 |
+| MC Non-Stem | 75.8 | 77.7 | 56.6 |
+| GenQA | 70.9 | 72.4 | 68.4 |
+
+Full evaluation results available in the paper.
+
+## Citation
+
+If you use Bolmo in your research, please cite:
+
+```bibtex
+<Citation info forthcoming!>
+```
+
+For the underlying OLMo-core framework:
 
 ```bibtex
 @misc{olmo20242olmo2furious,
-      title={{2 OLMo 2 Furious}},
-      author={{Team OLMo} and Pete Walsh and Luca Soldaini and Dirk Groeneveld and Kyle Lo and Shane Arora and Akshita Bhagia and Yuling Gu and Shengyi Huang and Matt Jordan and Nathan Lambert and Dustin Schwenk and Oyvind Tafjord and Taira Anderson and David Atkinson and Faeze Brahman and Christopher Clark and Pradeep Dasigi and Nouha Dziri and Michal Guerquin and Hamish Ivison and Pang Wei Koh and Jiacheng Liu and Saumya Malik and William Merrill and Lester James V. Miranda and Jacob Morrison and Tyler Murray and Crystal Nam and Valentina Pyatkin and Aman Rangapur and Michael Schmitz and Sam Skjonsberg and David Wadden and Christopher Wilhelm and Michael Wilson and Luke Zettlemoyer and Ali Farhadi and Noah A. Smith and Hannaneh Hajishirzi},
-      year={2024},
-      eprint={2501.00656},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2501.00656},
+  title={{2 OLMo 2 Furious}},
+  author={{Team OLMo} and Pete Walsh and Luca Soldaini and Dirk Groeneveld and Kyle Lo and Shane Arora and Akshita Bhagia and Yuling Gu and Shengyi Huang and Matt Jordan and Nathan Lambert and Dustin Schwenk and Oyvind Tafjord and Taira Anderson and David Atkinson and Faeze Brahman and Christopher Clark and Pradeep Dasigi and Nouha Dziri and Michal Guerquin and Hamish Ivison and Pang Wei Koh and Jiacheng Liu and Saumya Malik and William Merrill and Lester James V. Miranda and Jacob Morrison and Tyler Murray and Crystal Nam and Valentina Pyatkin and Aman Rangapur and Michael Schmitz and Sam Skjonsberg and David Wadden and Christopher Wilhelm and Michael Wilson and Luke Zettlemoyer and Ali Farhadi and Noah A. Smith and Hannaneh Hajishirzi},
+  year={2024},
+  eprint={2501.00656},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  url={https://arxiv.org/abs/2501.00656},
 }
 ```
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
