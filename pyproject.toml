@@ -65,8 +65,6 @@ mamba = [
     "mamba_ssm",
     "causal_conv1d",
     "einops",
-    "optree",
-    "regex",
 ]
 xlstm = [
     "xlstm",
