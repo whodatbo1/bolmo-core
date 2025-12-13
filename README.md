@@ -1,7 +1,7 @@
 <div align="center">
   <br>
   <h1>Bolmo</h1>
-  <h4>The first fully open byte-level language model performing on par with state-of-the-art subword models</h4>
+  <h4>The first family of competitive fully open byte-level language models.</h4>
 </div>
 
 <p align="center">
@@ -17,13 +17,15 @@
 
 ---
 
-**Bolmo** is the first fully-open byte-level language model achieving performance on par with or surpassing state-of-the-art subword-level language models. Unlike traditional language models that rely on subword tokenizers (like BPE or WordPiece), Bolmo operates directly on raw UTF-8 bytes, making it:
+**Bolmo** is the first fully-open byte-level language model achieving performance on the level of state-of-the-art subword-level language models. Unlike traditional language models that rely on subword tokenizers (like BPE or WordPiece), Bolmo operates directly on raw UTF-8 bytes, making it:
 
-- **Free of subword tokenization**: No need for language-specific tokenizers or vocabulary management
-- **Universally applicable**: Works seamlessly across all languages, scripts, and domains
-- **Fully open**: Complete training code, model weights, data processing pipeline, and paper
-- **Competitive performance**: Comes close to matching (and in some cases exceeds) subword-based state-of-the-art models across a wide range of tasks
-- **Better character understanding**: Superior performance on tasks requiring character-level knowledge
+- **Free of subword tokenization**: No need for language-specific tokenizers or vocabulary management.
+- **Universally applicable**: Works seamlessly across all languages, scripts, and domains.
+- **Fully open**: Complete training code, model weights, data processing pipeline, and paper.
+- **Competitive performance**: Comes close to matching (and in some cases exceeds) subword-based state-of-the-art models across a wide range of tasks.
+- **Better character understanding**: Superior performance on tasks requiring character-level knowledge.
+
+See our technical report for details: https://allenai.org/papers/bolmo.
 
 This repository is a fork of [OLMo-core](https://github.com/allenai/OLMo-core) that implements the complete Bolmo architecture and training pipeline through **byteifying** - our approach to converting existing subword models to byte-level models, using <1% of the pretraining budget.
 
@@ -36,7 +38,7 @@ We release Bolmo models in two sizes:
 | **Bolmo-7B** | 7.6B | Olmo 3 7B | [allenai/Bolmo-7B](https://huggingface.co/allenai/Bolmo-7B) |
 | **Bolmo-1B** | 1.5B | OLMo 2 1B | [allenai/Bolmo-1B](https://huggingface.co/allenai/Bolmo-1B) |
 
-**Dataset**: Training data based on Dolma 3 pretraining mix + StackEdu code data + CUTE-style character understanding tasks.
+Training data is available via HuggingFace at [allenai/bolmo_mix](https://huggingface.co/datasets/allenai/bolmo_mix).
 
 ## Installation
 
@@ -65,80 +67,70 @@ See the [OLMo-core documentation](https://olmo-core.readthedocs.io/) for complet
 ### Inference with HuggingFace
 
 ```python
-TODO
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+device = "cuda"
+bolmo = AutoModelForCausalLM.from_pretrained("allenai/Bolmo-7B", trust_remote_code=True).to(device)
+tokenizer = AutoTokenizer.from_pretrained("allenai/Bolmo-7B", trust_remote_code=True)
+
+message = ["Language modeling is "]
+input_ids = tokenizer(message, return_tensors="pt")["input_ids"].to(device)
+
+# `max_new_tokens` is the amuont of bytes to generate
+response = bolmo.generate(input_ids, max_new_tokens=256, do_sample=True, temperature=0.1)
+print(tokenizer.decode(response[0], skip_special_tokens=True))
 ```
 
-Or with the pipeline API:
+### HuggingFace checkpoints vs. olmo-core checkpoints
 
-```python
-TODO
+This codebase uses the olmo-core checkpoint format. Bolmo models can be converted from this format to the HuggingFace format via:
+
+```bash
+python3 src/examples/huggingface/convert_checkpoint_to_hf.py \
+    -i /path/to/bolmo/checkpoint \
+    -o /path/to/bolmo/checkpoint/in/hf/format \
+    -s 65536 \ # max sequence length
+    --dtype float32 \
+    --skip-validation
 ```
+
+Converting from HF format back to olmo-core is not implemented at the moment. However, we provide the original olmo-core checkpoints for Bolmo 1B and Bolmo 7B in the `olmo_core/` subdirectory on HF: [1B](https://huggingface.co/allenai/Bolmo-1B/tree/main/olmo_core), [7B](https://huggingface.co/allenai/Bolmo-7B/tree/main/olmo_core).
 
 ## Training
 
-Bolmo training uses a two-stage "byteifying" procedure to convert existing subword models to byte-level:
+Bolmo training uses a two-stage byteifying procedure to convert existing subword models to byte-level:
 
 ### Stage 1: Subword-to-Byte Distillation
-Quickly learn weights for local models while freezing the global model (9.8B tokens ≈ 43B bytes).
+Quickly learn weights for local models while freezing the global model (9.8B tokens ≈ 43B bytes). Training scripts for this stage are available at `bolmo_scripts/launch_stage1_*`.
 
 ### Stage 2: End-to-End Training
-Train the entire model to utilize byte-level information (39.3B tokens ≈ 173B bytes).
+Train the entire model to utilize byte-level information (39.3B tokens ≈ 173B bytes).  Training scripts for this stage are available at `bolmo_scripts/launch_stage2_*`.
 
-### Example Training Command
-
-```bash
-# Stage 1
-TODO
-
-# Stage 2 (after Stage 1 completes)
-TODO
-```
-
-See [`src/examples/bolmo/`](src/examples/bolmo/) for detailed training scripts and configuration options.
-
-## Architecture
-
-Bolmo uses a novel architecture that enables converting subword models to efficient byte-level language models:
-
-TODO: image
-
-## Key Features
-
-### 1. Universal Language Support
-No vocabulary limitations - works seamlessly across all languages, scripts, and domains without language-specific tokenizers.
-
-### 2. Superior Character Understanding
-Achieves 78.6% on CUTE (vs 56.9% for Olmo 3) and 71.6% on EXECUTE benchmarks through dedicated character-level training data.
-
-### 3. Adjustable Compression
-Unlike subword models, Bolmo can arbitrarily adjust the bytes-per-patch ratio to trade off speed for performance:
-
-```python
-TODO
-```
-
-### 4. Zero-Cost Post-Training
+## Post-Training via Task Arithmetic
 Existing post-trained checkpoints can be byteified without additional training using Task Arithmetic:
 
-```python
-TODO
+```bash
+python3 src/examples/bolmo/instructify.py \
+    --output=/path/to/output/ \
+    --checkpoint-dir=/path/to/bolmo/checkpoint \
+    --base-checkpoint-dir=/path/to/base-olmo/checkpoint \
+    --instruct-checkpoint-dir=/path/to/post-trained-olmo/checkpoint \
+    --alpha=1.0
 ```
 
-### 5. Efficient Training
-Total training cost: 9.8B tokens (≈43B bytes) for Stage 1, 39.3B tokens (≈173B bytes) for Stage 2 to byteify an existing model.
 
 ## Performance
 
 ### Bolmo 7B Results
 
-Bolmo 7B comes to matches or exceeds the performance of state-of-the-art byte-level models and comes close to the source Olmo 3 7B model:
+Bolmo 7B matches or exceeds the performance of state-of-the-art byte-level models and comes close to the source Olmo 3 7B model:
 
 | Category | Bolmo 7B | Olmo 3 7B | BLT 7B |
 |----------|----------|-----------|---------|
 | Character Understanding (CUTE) | 78.6 | 56.9 | 52.3 |
 | Multilingual Char (EXECUTE) | 71.6 | 55.1 | 46.3 |
-| Code | 41.0 | 40.1 | - |
-| Math | 48.9 | 55.3 | - |
+| Code | 41.0 | 40.1 | 31.6 |
+| Math | 48.9 | 55.3 | 15.7 |
 | MC Stem | 65.5 | 66.3 | 49.0 |
 | MC Non-Stem | 75.8 | 77.7 | 56.6 |
 | GenQA | 70.9 | 72.4 | 68.4 |
@@ -147,11 +139,7 @@ Full evaluation results available in the paper.
 
 ## Citation
 
-If you use Bolmo in your research, please cite:
-
-```bibtex
-<Citation info forthcoming!>
-```
+Forthcoming!
 
 For the underlying OLMo-core framework:
 
