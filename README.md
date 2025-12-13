@@ -4,6 +4,10 @@
   <h4>The first family of competitive fully open byte-level language models.</h4>
 </div>
 
+<img width="7711" height="4780" alt="bolmo_architecture" src="https://github.com/user-attachments/assets/a143aca6-4adf-4b57-b352-8bf93d51bb48" />
+
+<p></p>
+
 <p align="center">
   <a href="https://github.com/allenai/bolmo-core">
     <img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github"></a>
