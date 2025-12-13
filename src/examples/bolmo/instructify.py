@@ -33,14 +33,10 @@ BYTE_EXPANSION_FACTOR = int(os.environ.get("BYTE_EXPANSION_FACTOR", "6"))
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Instructify OLMo model merging script")
-    parser.add_argument("--checkpoint-dir", type=str, default="/weka/oe-training-default/benjaminm/runs/stage2n_hnet_v8-e1d4-w-ee-no-sm-150k-half-local-lr_wd01gc05/step150000",
-                        help="Path to the main checkpoint directory")
-    parser.add_argument("--output", type=str, default="/weka/oe-training-default/benjaminm/merges/stage2n_hnet_v8-e1d4-w-ee-no-sm-150k-half-local-lr_wd01gc05_zeroshot_instruct_alpha1",
-                        help="Path to output directory")
-    parser.add_argument("--base-checkpoint-dir", type=str, default="/weka/oe-training-default/benjaminm/checkpoints/olmo2_1b",
-                        help="Path to base checkpoint directory")
-    parser.add_argument("--instruct-checkpoint-dir", type=str, default="/weka/oe-training-default/benjaminm/checkpoints/olmo2_1b_instruct",
-                        help="Path to instruct checkpoint directory")
+    parser.add_argument("--checkpoint-dir", type=str, help="Path to the main checkpoint directory")
+    parser.add_argument("--output", type=str, help="Path to output directory")
+    parser.add_argument("--base-checkpoint-dir", type=str, help="Path to base checkpoint directory")
+    parser.add_argument("--instruct-checkpoint-dir", type=str, help="Path to instruct checkpoint directory")
     parser.add_argument("--include-instruct-teacher", action="store_true",
                         default=True,
                         help="Include instruct teacher in the merged model")

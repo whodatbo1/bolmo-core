@@ -12,10 +12,6 @@ Usage:
         --batch-size 32 \
         --sequence-length 2048
 
-Environment variables:
-    DATA_SOURCE: One of 'dclm', 'dolmino', 'dolma2_code_string', 'dolmino_code_string', 'tulu3'
-    HAS_WEKA: Set to '1' if running on Weka filesystem
-
 For each input shard like "part-0-00000.npy", this will create:
     - output_dir/entropy/path/to/part-0-00000.npy (entropy values as raw binary float16)
     - output_dir/cross_entropy/path/to/part-0-00000.npy (cross-entropy values as raw binary float16)
