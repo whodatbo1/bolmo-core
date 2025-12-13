@@ -78,46 +78,18 @@ LOCAL_BATCH_SIZE = 64
 EVAL_BATCH_SIZE = 16
 LOCAL_MODEL_STYLE = os.environ.get("LOCAL_MODEL_STYLE", "hnet:xlstm")
 TRAIN_MODE = os.environ.get("TRAIN_MODE", "stage_1")
-DATA_SOURCE = os.environ.get("DATA_SOURCE", "dclm")
+DATA_SOURCE = os.environ.get("DATA_SOURCE", "data_sources.txt")
 DTYPE = os.environ.get("DTYPE", "float32")
 LR_SCHEDULE = os.environ.get("LR_SCHEDULE", "linear_with_warmup")
 ADD_HASH_EMBEDDINGS = os.environ.get("ADD_HASH_EMBEDDINGS", "false").lower() in {"1", "true", "yes"}
 ADD_EXPANDED_EMBEDDINGS = os.environ.get("ADD_EXPANDED_EMBEDDINGS", "true").lower() in {"1", "true", "yes"}
 OLMO_ARCH = os.environ.get("OLMO_ARCH", "olmo2_1B_v2")
 
-if DATA_SOURCE == "dclm":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources.txt").read().strip().splitlines()
-elif DATA_SOURCE == "dolmino":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_dolmino.txt").read().strip().splitlines()
-elif DATA_SOURCE == "dolma2_code_string":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_dolma2_code_string.txt").read().strip().splitlines()
-elif DATA_SOURCE == "dolma2_150b_code_string":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_dolma2_150b_code_string.txt").read().strip().splitlines()
-elif DATA_SOURCE == "dolmino_code_string":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_dolmino_code_string.txt").read().strip().splitlines()
-elif DATA_SOURCE == "tulu3":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_tulu3.txt").read().strip().splitlines()
-elif DATA_SOURCE == "fineweb2_thai_sample":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_fineweb2_thai_sample.txt").read().strip().splitlines()
-elif DATA_SOURCE == "fineweb2_thai_sample_typhoon_tokenized":
-    _DATA_SOURCES = open(Path(__file__).parent / "data_sources_fineweb2_thai_sample_typhoon_tokenized.txt").read().strip().splitlines()
-else:
-    raise ValueError(f"Unknown DATA_SOURCE: {DATA_SOURCE}. Must be one of 'dclm', 'dolmino', 'dolma2_code_string', 'dolmino_code_string'.")
+DATA_PATHS = open(DATA_SOURCE).read().strip().splitlines()
 
 OLMO_CKPT_PATH = os.environ.get("OLMO_CKPT_PATH", "")
 STAGE1_CKPT_PATH = os.environ.get("STAGE1_CKPT_PATH", "")
-ENTROPY_CKPT_PATH = os.environ.get("ENTROPY_CKPT_PATH", "/weka/oe-training-default/ai2-llm/checkpoints/dirkg/ladder/checkpoints/baseline-titan-190M-5xC/step36308/model_and_optim")
-DATA_PATHS = ["/weka/oe-training-default/" + x for x in _DATA_SOURCES]
-EMBEDDING_INIT_PATH = os.environ.get(
-    "EMBEDDING_INIT_PATH",
-    "/weka/oe-training-default/benjaminm/olmo_1b_blt_hash_embedding_init_v2_d2048_exp_vocab",
-)
-
-if not os.environ.get("HAS_WEKA"):
-    OLMO_CKPT_PATH = OLMO_CKPT_PATH.replace("/weka/oe-training-default/ai2-llm/", "gs://ai2-llm/").replace("/weka/oe-training-default/", "gs://ai2-llm/")
-    STAGE1_CKPT_PATH = STAGE1_CKPT_PATH.replace("/weka/oe-training-default/ai2-llm/", "gs://ai2-llm/").replace("/weka/oe-training-default/", "gs://ai2-llm/")
-    DATA_PATHS = [x.replace("/weka/oe-training-default/", "gs://") for x in DATA_PATHS] # slight inconsistency
-    EMBEDDING_INIT_PATH = EMBEDDING_INIT_PATH.replace("/weka/oe-training-default/ai2-llm/", "gs://ai2-llm/").replace("/weka/oe-training-default/", "gs://ai2-llm/")
+EMBEDDING_INIT_PATH = os.environ.get("EMBEDDING_INIT_PATH", "")
 
 log = logging.getLogger(__name__)
 
@@ -136,9 +108,6 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
 
     BYTE_EXPANSION_FACTOR = int(os.environ.get("BYTE_EXPANSION_FACTOR", "6"))  # default (max) expansion factor
     SAVE_FOLDER = os.environ.get("SAVE_FOLDER", f"/tmp/{run_name}")
-
-    if not os.environ.get("HAS_WEKA"):
-        SAVE_FOLDER = SAVE_FOLDER.replace("/weka/oe-training-default/", "gs://ai2-llm/")
 
     byte_tokenizer_config = ByteTokenizerConfig.blt()
     subword_tokenizer_config = TokenizerConfig.dolma2()
@@ -481,19 +450,8 @@ def main(run_name: str, overrides: List[str]):
 
     dataset = config.dataset.build()
 
-    if train_module.bolmo_config.gradual_boundary_compression_kind == "bpe":  # type: ignore
-        dataset.enable_compute_merges("bpe")  # type: ignore
-    elif train_module.bolmo_config.gradual_boundary_compression_kind in {"entropy", "cross_entropy"}:  # type: ignore
-        entropy_model_config = TransformerConfig.olmo2_190M(vocab_size=TokenizerConfig.dolma2().padded_vocab_size(), dtype=DType.bfloat16)
-        entropy_model = entropy_model_config.build(init_device="cpu")
-        load_model_and_optim_state(
-            ENTROPY_CKPT_PATH,
-            entropy_model,
-        )
-        dataset.enable_compute_merges(  # type: ignore
-            train_module.bolmo_config.gradual_boundary_compression_kind, # type: ignore
-            entropy_model=entropy_model
-        )
+    if train_module.bolmo_config.gradual_boundary_compression_kind is not None:  # type: ignore
+        raise NotImplementedError("Gradual boundary compression is not implemented for stage1.")
 
     use_byte_collator = isinstance(dataset, NumpyByteFSLDataset) or isinstance(dataset, NumpyBytePaddedFSLDataset)
     data_loader = config.data_loader.build(
