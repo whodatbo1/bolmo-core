@@ -145,7 +145,7 @@ Full evaluation results available in the paper.
 
 To cite Bolmo:
 
-```
+```bibtex
 @misc{bolmo,
       title={Bolmo: Byteifying the Next Generation of Language Models}, 
       author={Benjamin Minixhofer and Tyler Murray and Tomasz Limisiewicz and Anna Korhonen and Luke Zettlemoyer and Noah A. Smith and Edoardo M. Ponti and Luca Soldaini and Valentin Hofmann},
@@ -155,7 +155,9 @@ To cite Bolmo:
       primaryClass={cs.CL},
       url={https://arxiv.org/abs/2512.15586}, 
 }
-```or the underlying OLMo-core framework:
+```
+
+For the underlying OLMo-core framework:
 
 ```bibtex
 @misc{olmo20242olmo2furious,
