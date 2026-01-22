@@ -1,16 +1,17 @@
-NAME=stage1_bolmo_1b
-SEQUENCE_LENGTH=4096 \
-DTYPE=float32 \
-DATA_SOURCE=data_sources.txt \
-OLMO_ARCH=olmo2_1B_v2 \
-OLMO_CKPT_PATH=/path/to/olmo2/ckpt \
-TRAIN_MODE=stage_1 \
-LOCAL_MODEL_STYLE="hnet:xlstm" \
-ADD_HASH_EMBEDDINGS=false \
-ADD_EXPANDED_EMBEDDINGS=true \
-EMBEDDING_INIT_PATH="" \
-SAVE_FOLDER=/path/to/save/folder/$NAME \
-python3 src/examples/bolmo/train_stage1.py $NAME \
+export NAME=stage1_bolmo_1b
+export SEQUENCE_LENGTH=4096 \
+export DTYPE=float32 \
+export DATA_SOURCE="$HOME/bolmo-core/src/olmo_core/data/mixes/test_mix.txt" \
+export OLMO_ARCH=olmo2_1B_v2 \
+export OLMO_CKPT_PATH="" \
+export TRAIN_MODE=stage_1 \
+export LOCAL_MODEL_STYLE="hnet:xlstm" \
+export ADD_HASH_EMBEDDINGS=false \
+export ADD_EXPANDED_EMBEDDINGS=true \
+export EMBEDDING_INIT_PATH="" \
+export SAVE_FOLDER=~/bolmo_saves/$NAME \
+
+torchrun --nproc_per_node=1 --nnodes=1 $HOME/bolmo-core/src/examples/bolmo/train_stage1.py $NAME \
     train_module.bolmo_config.losses=[local_encoder,ce,local_decoder,boundary] \
     train_module.bolmo_config.loss_weights=[1,1,1,4] \
     train_module.bolmo_config.div_fn=kl \
