@@ -1,7 +1,7 @@
 export NAME=stage1_bolmo_1b
 export SEQUENCE_LENGTH=4096 \
 export DTYPE=float32 \
-export DATA_SOURCE="$HOME/bolmo-core/src/olmo_core/data/mixes/test_mix.txt" \
+export DATA_SOURCE="$BOLMO_HOME/data/bolmo_test/data_sources.txt" \
 export OLMO_ARCH=olmo2_1B_v2 \
 export OLMO_CKPT_PATH="" \
 export TRAIN_MODE=stage_1 \
@@ -11,7 +11,7 @@ export ADD_EXPANDED_EMBEDDINGS=true \
 export EMBEDDING_INIT_PATH="" \
 export SAVE_FOLDER=~/bolmo_saves/$NAME \
 
-torchrun --nproc_per_node=1 --nnodes=1 $HOME/bolmo-core/src/examples/bolmo/train_stage1.py $NAME \
+torchrun --nproc_per_node=1 --nnodes=1 $BOLMO_HOME/src/examples/bolmo/train_stage1.py $NAME \
     train_module.bolmo_config.losses=[local_encoder,ce,local_decoder,boundary] \
     train_module.bolmo_config.loss_weights=[1,1,1,4] \
     train_module.bolmo_config.div_fn=kl \
