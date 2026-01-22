@@ -61,7 +61,8 @@ def create_byte_tokenizer(base_tokenizer: str = "allenai/dolma2-tokenizer") -> B
 def tokenize_text(
     text: str,
     tokenizer_type: str,
-    tokenizer_identifier: str = "allenai/dolma2-tokenizer"
+    hf_tokenizer,
+    byte_tokenizer=None
 ) -> np.ndarray:
     """
     Tokenize text using specified tokenizer.
@@ -69,15 +70,14 @@ def tokenize_text(
     Args:
         text: Text to tokenize
         tokenizer_type: Either 'byte' or 'subword'
-        tokenizer_identifier: HuggingFace identifier for the tokenizer
+        hf_tokenizer: Pre-loaded HuggingFace tokenizer
+        byte_tokenizer: Pre-loaded byte tokenizer (only needed for byte mode)
 
     Returns:
         Array of token IDs
     """
     if tokenizer_type == "byte":
-        byte_tokenizer = create_byte_tokenizer(tokenizer_identifier)
         # For byte tokenizer, we need to first get subword tokens, then convert to bytes
-        hf_tokenizer = AutoTokenizer.from_pretrained(tokenizer_identifier)
         subword_ids = hf_tokenizer.encode(text, add_special_tokens=True)
 
         # Convert subword tokens to byte sequences
@@ -89,8 +89,7 @@ def tokenize_text(
         return np.array(byte_ids, dtype=np.uint32)
 
     elif tokenizer_type == "subword":
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_identifier)
-        token_ids = tokenizer.encode(text, add_special_tokens=True)
+        token_ids = hf_tokenizer.encode(text, add_special_tokens=True)
         return np.array(token_ids, dtype=np.uint32)
 
     else:
@@ -126,6 +125,14 @@ def download_and_prepare_data(
     log.info(f"Downloading {data_fraction*100}% of bolmo_mix dataset...")
     log.info(f"Using {tokenizer_type} tokenizer: {tokenizer_identifier}")
     log.info(f"Output directory: {output_dir}")
+
+    # Initialize tokenizers once (not per-example!)
+    log.info("Loading tokenizers...")
+    hf_tokenizer = AutoTokenizer.from_pretrained(tokenizer_identifier)
+    byte_tokenizer = None
+    if tokenizer_type == "byte":
+        byte_tokenizer = create_byte_tokenizer(tokenizer_identifier)
+    log.info("Tokenizers loaded successfully")
 
     # Load dataset
     try:
@@ -181,7 +188,7 @@ def download_and_prepare_data(
 
             # Tokenize
             try:
-                tokens = tokenize_text(text, tokenizer_type, tokenizer_identifier)
+                tokens = tokenize_text(text, tokenizer_type, hf_tokenizer, byte_tokenizer)
                 current_tokens.extend(tokens.tolist())
                 total_tokens += len(tokens)
                 processed_examples += 1
