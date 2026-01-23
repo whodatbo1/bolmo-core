@@ -102,6 +102,29 @@ class ExperimentConfig(Config):
     trainer: TrainerConfig
     init_seed: int = 12536
 
+def get_local_d_model(model: str) -> int:
+    d_models = {
+        "olmo2_1B_v2": 2048,
+        "olmo2_7B": 4096,
+        "olmo3_7B": 4096,
+        "llama3_1B": 2048,
+    }
+
+    if not model in d_models:
+        raise ValueError(f"Unknown OLMO_ARCH: {OLMO_ARCH}. Must be one of 'olmo2_1B_v2', 'olmo2_7B', 'olmo3_7B', 'Llama-3.2-1B'.")
+    return d_models[model]
+    
+def get_tokenizer(model: str) -> TokenizerConfig:
+    toks = {
+        "olmo2_1B_v2": TokenizerConfig.dolma2,
+        "olmo2_7B": TokenizerConfig.dolma2,
+        "olmo3_7B": TokenizerConfig.dolma2,
+        "llama3_1B": TokenizerConfig.from_hf("meta-llama/Llama-3.2-1B"),
+    }
+    if not model in toks:
+        raise ValueError(f"Unknown tokenizer for OLMO_ARCH: {OLMO_ARCH}. Must be one of 'olmo2_1B_v2', 'olmo2_7B', 'olmo3_7B', 'Llama-3.2-1B'.")
+    return toks[model]
+
 
 def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     global NUM_WORKERS, GLOBAL_BATCH_SIZE, LOCAL_BATCH_SIZE, EVAL_BATCH_SIZE
@@ -110,7 +133,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     SAVE_FOLDER = os.environ.get("SAVE_FOLDER", f"/tmp/{run_name}")
 
     byte_tokenizer_config = ByteTokenizerConfig.blt()
-    subword_tokenizer_config = TokenizerConfig.dolma2()
+    subword_tokenizer_config = get_tokenizer(OLMO_ARCH)
 
     if QUICK_DEBUG:
         NUM_WORKERS = 0
@@ -125,16 +148,9 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         freeze_params=["*"], # don't train teacher
     )
 
-    if LOCAL_MODEL_STYLE == "blt":
-        if OLMO_ARCH == "olmo2_1B_v2":
-            local_d_model = 2048
-        elif OLMO_ARCH == "olmo2_7B":
-            local_d_model = 4096
-        elif OLMO_ARCH == "olmo3_7B":
-            local_d_model = 4096
-        else:
-            raise ValueError(f"Unknown OLMO_ARCH: {OLMO_ARCH}. Must be one of 'olmo2_1B_v2', 'olmo2_7B', 'olmo3_7B'.")
+    local_d_model = get_local_d_model(OLMO_ARCH)
 
+    if LOCAL_MODEL_STYLE == "blt":
         local_encoder_n_layers = 1
         local_decoder_n_layers = 9
         local_attn_n_heads = 16
@@ -168,15 +184,6 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
             blt_k=2,
         )
     elif LOCAL_MODEL_STYLE.startswith("hnet"):
-        if OLMO_ARCH == "olmo2_1B_v2":
-            local_d_model = 2048
-        elif OLMO_ARCH == "olmo2_7B":
-            local_d_model = 4096
-        elif OLMO_ARCH == "olmo3_7B":
-            local_d_model = 4096
-        else:
-            raise ValueError(f"Unknown OLMO_ARCH: {OLMO_ARCH}. Must be one of 'olmo2_1B_v2', 'olmo2_7B', 'olmo3_7B'.")
-
         local_encoder_n_layers = 4
         local_decoder_n_layers = 4
         local_encoder_block = local_decoder_block = TransformerBlockConfig(

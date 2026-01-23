@@ -79,7 +79,10 @@ def _get_tokenizer_config(tokenizer_id: str) -> TokenizerConfig:
         "gpt2": TokenizerConfig.gpt2,
     }
 
-    return tokenizer_configs[tokenizer_id.lower()]()
+    if tokenizer_id in tokenizer_configs:
+        return tokenizer_configs[tokenizer_id.lower()]()
+    else:
+        return TokenizerConfig.from_hf(tokenizer_id)
 
 
 def convert_checkpoint_from_hf(

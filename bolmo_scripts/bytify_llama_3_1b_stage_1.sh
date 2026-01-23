@@ -1,9 +1,9 @@
-export NAME=stage1_bolmo_1b
+export NAME=stage1_Llama-3.2-1B
 export SEQUENCE_LENGTH=4096 \
 export DTYPE=float32 \
 export DATA_SOURCE="$BOLMO_HOME/data/bolmo_test/data_sources.txt" \
-export OLMO_ARCH=olmo2_1B_v2 \
-export OLMO_CKPT_PATH="$BOLMO_HOME/checkpoints/olmo_1b/model_and_optim" \
+export OLMO_ARCH=llama3_1B \
+export OLMO_CKPT_PATH="$BOLMO_HOME/checkpoints/Llama-3.2-1B/model_and_optim" \
 export TRAIN_MODE=stage_1 \
 export LOCAL_MODEL_STYLE="hnet:xlstm" \
 export ADD_HASH_EMBEDDINGS=false \
