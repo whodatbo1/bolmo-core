@@ -84,6 +84,7 @@ LR_SCHEDULE = os.environ.get("LR_SCHEDULE", "linear_with_warmup")
 ADD_HASH_EMBEDDINGS = os.environ.get("ADD_HASH_EMBEDDINGS", "false").lower() in {"1", "true", "yes"}
 ADD_EXPANDED_EMBEDDINGS = os.environ.get("ADD_EXPANDED_EMBEDDINGS", "true").lower() in {"1", "true", "yes"}
 OLMO_ARCH = os.environ.get("OLMO_ARCH", "olmo2_1B_v2")
+ENABLE_PROFILING = os.environ.get("ENABLE_PROFILING", "false").lower() in {"1", "true", "yes"}
 
 DATA_PATHS = open(DATA_SOURCE).read().strip().splitlines()
 
@@ -421,7 +422,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
             ),
         )
         .with_callback("config_saver", ConfigSaverCallback())
-        .with_callback("profiler", ProfilerCallback(enabled=False))
+        .with_callback("profiler", ProfilerCallback(enabled=ENABLE_PROFILING))
         .with_callback(
             "downstream_evaluator",
             DownstreamEvaluatorCallbackConfig(

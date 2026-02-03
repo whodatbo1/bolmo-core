@@ -10,6 +10,7 @@ export ADD_HASH_EMBEDDINGS=false \
 export ADD_EXPANDED_EMBEDDINGS=true \
 export EMBEDDING_INIT_PATH="" \
 export SAVE_FOLDER=~/bolmo_saves/$NAME \
+export ENABLE_PROFILING=1 \
 
 torchrun --nproc_per_node=1 --nnodes=1 $BOLMO_HOME/src/examples/bolmo/train_stage1.py $NAME \
     train_module.bolmo_config.losses=[local_encoder,ce,local_decoder,boundary] \

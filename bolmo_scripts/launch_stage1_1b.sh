@@ -26,7 +26,7 @@ torchrun --nproc_per_node=1 --nnodes=1 $BOLMO_HOME/src/examples/bolmo/train_stag
     train_module.optim.weight_decay=0.1 \
     train_module.max_grad_norm=0.5 \
     train_module.optim.lr=7e-4 \
-    model.block.attention.use_flash=true \
+    model.block.attention.backend=flash_2 \
     model.local_encoder.n_layers=1 \
     model.local_decoder.n_layers=4 \
     model.local_decoder.hnet_smooth=false \
