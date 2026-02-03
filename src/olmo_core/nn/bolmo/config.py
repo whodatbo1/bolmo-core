@@ -72,6 +72,7 @@ class LocalEncoderConfig(Config):
     boundary_predictor_lookahead: int = 1
     represent_bytes_with_embeddings: bool = False
     represent_bytes_with_last_mixed_out: bool = False
+    use_inference_rolling_past_tokens: bool = True
     blt_k: Optional[int] = None  # used in blt
     blt_compat: bool = False # for compat with BLT checkpoints
     dtype: DType = DType.float32
@@ -102,6 +103,7 @@ class LocalEncoderConfig(Config):
             boundary_predictor_lookahead=self.boundary_predictor_lookahead,
             represent_bytes_with_embeddings=self.represent_bytes_with_embeddings,
             represent_bytes_with_last_mixed_out=self.represent_bytes_with_last_mixed_out,
+            use_inference_rolling_past_tokens=self.use_inference_rolling_past_tokens,
             blt_k=self.blt_k,
             blt_compat=self.blt_compat,
             dtype=self.dtype.as_pt(),

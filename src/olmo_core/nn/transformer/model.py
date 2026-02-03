@@ -1384,8 +1384,10 @@ class BolmoTransformer(Transformer):
             **local_encoder_kwargs,
         )
 
-        # TEMP DEBUG
-        h_patch_global = h_patch.to(torch.bfloat16)
+        # Use bfloat16 only if Flash Attention 2 is enabled, otherwise use activation dtype
+        dtype = h_patch.dtype
+        global_dtype = torch.bfloat16 if isinstance(self.blocks["0"].attention.backend, FlashAttention2Backend) else dtype  # type: ignore
+        h_patch_global = h_patch.to(global_dtype)
 
         # Run each block.
         for block_key, block in self.blocks.items():
@@ -1396,7 +1398,7 @@ class BolmoTransformer(Transformer):
                 mark_dynamic(h_patch_global, (0, 1), strict=False)
             h_patch_global = block(h_patch_global, **all_block_kwargs, **block_kwargs)
 
-        h_patch_after_global = h_patch_global.to(h_patch.dtype)
+        h_patch_after_global = h_patch_global.to(dtype)
 
         h_out = self.local_decoder(
             embeds=h_byte,
@@ -2825,12 +2827,16 @@ class BolmoDistillTransformer(BolmoTransformer):
                 for i, current_n_boundaries in enumerate(n_boundaries):
                     h_patch[i, -current_n_boundaries:] = h_patch[i, :current_n_boundaries].clone()
 
+            # Use bfloat16 only if Flash Attention 2 is enabled, otherwise use activation dtype
+            dtype = h_patch.dtype
+            global_dtype = torch.bfloat16 if isinstance(self.blocks["0"].attention.backend, FlashAttention2Backend) else dtype  # type: ignore
+
             h_patch_after_global, _ = self._block_forward(
-                h_patch.to(torch.bfloat16),
+                h_patch.to(global_dtype),
                 all_block_kwargs=all_block_kwargs,
                 per_block_kwargs=per_block_kwargs,
             )
-            h_patch_after_global = h_patch_after_global.to(h_patch.dtype)
+            h_patch_after_global = h_patch_after_global.to(dtype)
 
             if needs_conversion:
                 n_boundaries = boundary_mask.sum(-1)  # type: ignore

@@ -300,6 +300,7 @@ class LocalEncoder(nn.Module):
             represent_bytes_with_embeddings: bool = False,
             represent_bytes_with_last_mixed_out: bool = False,
             subword_vocab_size: Optional[int] = 100278, # dolma2 tokenizer specific!
+            use_inference_rolling_past_tokens: bool = True, 
             blt_k: Optional[int] = None,
             blt_compat: bool = False,  # for compat with BLT checkpoints
             cache_n_last_tokens: int = 256,
@@ -450,7 +451,7 @@ class LocalEncoder(nn.Module):
         else:
             self.out_projection = None
 
-        self.use_rolling_past_tokens = True
+        self.use_rolling_past_tokens = use_inference_rolling_past_tokens
 
         self.has_cache = False
         self.cache_n_last_tokens = cache_n_last_tokens # for toucan-style decoding all at once
@@ -593,6 +594,7 @@ class LocalEncoder(nn.Module):
 
         self.cache_seqlens = 0
         if self.use_rolling_past_tokens:
+            print('use_rolling_past_tokens set to True. Initializing cache...')
             self.rolling_past_tokens = torch.zeros((batch_size, self.cache_n_last_tokens), dtype=torch.long, device=device)
             self.n_rolling_past_tokens = 0
         else:

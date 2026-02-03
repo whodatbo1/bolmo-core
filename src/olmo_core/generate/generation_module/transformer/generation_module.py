@@ -535,6 +535,7 @@ class TransformerGenerationModule(GenerationModule):
         load_thread_count: Optional[int] = None,
         dtype: Optional[DType] = None,
         attention_backend: Optional[AttentionBackendName] = None,
+        use_inference_rolling_past_tokens: bool = True,
         **kwargs,
     ) -> "TransformerGenerationModule":
         """
@@ -582,6 +583,19 @@ class TransformerGenerationModule(GenerationModule):
                     f"Failed to load config from checkpoint at {config_path}: missing required field {e}"
                 ) from e
 
+        if attention_backend is not None:
+            print(f'Configuration specifies {transformer_config.name} to generate using {attention_backend} attention backend.')
+            attention_backend.assert_supported()
+
+            def set_attention_backend(c):
+                if hasattr(c, "attention"):
+                    attention = getattr(c, "attention")
+                    if hasattr(attention, "backend"):
+                        setattr(attention, "backend", attention_backend)
+                        setattr(attention, "use_flash", None)  # strip out deprecated option
+
+            transformer_config.apply(set_attention_backend)
+
         # TODO(benjaminm): this does not seem like a good place..
         if transformer_config.name in {TransformerType.bolmo, TransformerType.bolmo_distill}:  # type: ignore
             if transformer_config.name == TransformerType.bolmo_distill:  # type: ignore
@@ -597,6 +611,7 @@ class TransformerGenerationModule(GenerationModule):
                 pre_download=pre_download,
                 load_thread_count=load_thread_count,
                 dtype=dtype,
+                use_inference_rolling_past_tokens=use_inference_rolling_past_tokens,
                 **kwargs,
             )
 
@@ -638,26 +653,15 @@ class TransformerGenerationModule(GenerationModule):
                 lambda c: setattr(c, "dtype", dtype) if hasattr(c, "dtype") else None
             )
 
-        if attention_backend is not None:
-            attention_backend.assert_supported()
-
-            def set_attention_backend(c):
-                if hasattr(c, "attention"):
-                    attention = getattr(c, "attention")
-                    if hasattr(attention, "backend"):
-                        setattr(attention, "backend", attention_backend)
-                        setattr(attention, "use_flash", None)  # strip out deprecated option
-
-            transformer_config.apply(set_attention_backend)
-
         log_or_print(log, f"{transformer_config}")
         log_or_print(log, f"{generation_config}")
         model = transformer_config.build()
 
         # DEBUG flash attention needs bf16
-        for block in model.blocks.values():
-            block.to(torch.bfloat16)
-        
+        # NOTE: Commented out - this was forcing bfloat16 regardless of checkpoint dtype
+        # for block in model.blocks.values():
+        #     block.to(torch.bfloat16)
+
         generation_module = cls(model, generation_config, **kwargs)
 
         # Load checkpoint
@@ -1507,6 +1511,7 @@ class BolmoTransformerGenerationModule(TransformerGenerationModule):
         pre_download: bool = True,
         load_thread_count: Optional[int] = None,
         dtype: Optional[DType] = None,
+        use_inference_rolling_past_tokens: bool = True,
         **kwargs,
     ) -> "TransformerGenerationModule":
         """
@@ -1553,6 +1558,8 @@ class BolmoTransformerGenerationModule(TransformerGenerationModule):
                     f"Failed to load config from checkpoint at {config_path}: missing required field {e}"
                 ) from e
 
+        transformer_config.local_encoder.use_inference_rolling_past_tokens = use_inference_rolling_past_tokens
+
         # Create work directory on rank 0
         work_dir = Path(
             work_dir or (tempfile.mkdtemp() if get_rank(process_group) == 0 else "/tmp")
@@ -1591,15 +1598,16 @@ class BolmoTransformerGenerationModule(TransformerGenerationModule):
             )
 
         # DEBUG force enable flash attention
-        transformer_config.block.attention.use_flash = True
+        # transformer_config.block.attention.use_flash = False
 
         log_or_print(log, f"{transformer_config}")
         log_or_print(log, f"{generation_config}")
         model = transformer_config.build()
 
         # DEBUG flash attention needs bf16
-        for block in model.blocks.values():
-            block.to(torch.bfloat16)
+        # NOTE: Commented out - this was forcing bfloat16 regardless of checkpoint dtype
+        # for block in model.blocks.values():
+        #     block.to(torch.bfloat16)
 
         generation_module = cls(
             model,

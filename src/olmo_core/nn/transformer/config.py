@@ -346,7 +346,7 @@ class TransformerConfig(Config):
         if self.name not in {TransformerType.bolmo, TransformerType.bolmo_distill}:
             # not implemented for BolmoTransformer
             log.info(
-                f"Building transformer with {self.num_params:,d} total params, "
+                f"Building {self.name} transformer with {self.num_params:,d} total params, "
                 f"{self.num_non_embedding_params:,d} non-embedding params"
             )
 
@@ -456,7 +456,8 @@ class TransformerConfig(Config):
                 else:
                     log.info(f"Param '{name}' will be trainable")
 
-        log.info("%s", model)
+        # Temporarily disable printing model to reduce excessive logging
+        # log.info("%s", model)
         log.info(
             f"Built model with:\n"
             f"- {model.num_params:,d} total params\n"
